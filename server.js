@@ -1,22 +1,15 @@
 import express from "express";
-import fetch from "node-fetch";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-const ESP_STREAM_URL = process.env.ESP_STREAM_URL;
-
-app.get("/stream", async (req, res) => {
-  try {
-    const espRes = await fetch(ESP_STREAM_URL);
-
-    res.setHeader("Content-Type", "multipart/x-mixed-replace; boundary=frame");
-
-    espRes.body.pipe(res);
-  } catch (e) {
-    res.status(500).send("ESP32 stream not reachable");
-  }
+// Just return the stream URL
+app.get("/stream-url", (req, res) => {
+  res.json({
+    stream_url: process.env.ESP_STREAM_URL
+  });
 });
 
-app.listen(10000, () => {
-  console.log("Render relay running on port 10000");
+app.listen(PORT, () => {
+  console.log("Render server running on port", PORT);
 });
