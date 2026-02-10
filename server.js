@@ -1,44 +1,22 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+import express from "express";
+import fetch from "node-fetch";
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' }));
+const ESP_STREAM_URL = process.env.ESP_STREAM_URL;
 
-let devices = {}; // deviceID -> {servo, wifi, cameraFrame, DHT}
+app.get("/stream", async (req, res) => {
+  try {
+    const espRes = await fetch(ESP_STREAM_URL);
 
-app.post('/api/device/:id/command', (req,res)=>{
-  const deviceID = req.params.id;
-  if(!devices[deviceID]) devices[deviceID]={};
-  devices[deviceID].servo = req.body.servo;
-  devices[deviceID].wifi = req.body.wifi;
-  devices[deviceID].DHT = req.body.DHT;
-  res.json({status:'ok'});
-});
+    res.setHeader("Content-Type", "multipart/x-mixed-replace; boundary=frame");
 
-app.get('/api/device/:id/command', (req,res)=>{
-  const deviceID = req.params.id;
-  if(!devices[deviceID]) devices[deviceID]={};
-  res.json(devices[deviceID]);
-});
-
-app.post('/api/device/:id/camera', (req,res)=>{
-  const deviceID = req.params.id;
-  if(!devices[deviceID]) devices[deviceID]={};
-  devices[deviceID].cameraFrame = req.body.frame;
-  res.json({status:'ok'});
-});
-
-app.get('/api/device/:id/camera', (req,res)=>{
-  const deviceID = req.params.id;
-  if(devices[deviceID] && devices[deviceID].cameraFrame){
-    res.json({frame: devices[deviceID].cameraFrame});
-  } else {
-    res.status(404).json({error:'No frame'});
+    espRes.body.pipe(res);
+  } catch (e) {
+    res.status(500).send("ESP32 stream not reachable");
   }
 });
 
-app.listen(port, ()=>console.log(`Server running at port ${port}`));
+app.listen(10000, () => {
+  console.log("Render relay running on port 10000");
+});
